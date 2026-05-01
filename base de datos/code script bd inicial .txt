@@ -1,0 +1,256 @@
+-- =========================================
+-- BASE DE DATOS
+-- =========================================
+CREATE DATABASE sistemacatering_db;
+
+-- Conectarse a la BD antes de ejecutar lo demás
+-- \c sistemacatering_db;
+
+-- =========================================
+-- TABLAS PRINCIPALES
+-- =========================================
+
+-- ==========AGREGAR COLUMNA FALTANTE=============
+ALTER TABLE detalle_venta
+ADD COLUMN precio DECIMAL(10,2);
+-- ==========QUITAR COLUMNA =============
+ALTER TABLE detalle_venta
+DROP COLUMN precio;
+
+-- 1. Agregar turno a ventas
+ALTER TABLE public.ventas 
+ADD COLUMN turno character varying(20) 
+CHECK (turno IN ('desayuno', 'almuerzo', 'cena'));
+
+-- 2. Agregar destinatario de las notificaciones
+ALTER TABLE public.notificaciones 
+ADD COLUMN id_usuario integer REFERENCES public.usuarios(id_usuario);
+
+-- 3. Evaluar si necesitás tabla de áreas para clientes
+-- Si id_cargo ya representa área, renombrá la tabla a "areas" o "grupos"
+
+
+CREATE DATABASE sistemacatering_db;
+
+-- ROLES
+CREATE TABLE roles (
+  id_rol SERIAL PRIMARY KEY,
+  nombre_rol VARCHAR(50) UNIQUE NOT NULL
+);
+
+-- PERMISOS
+CREATE TABLE permisos (
+  id_permiso SERIAL PRIMARY KEY,
+  nombre VARCHAR(100),
+  descripcion TEXT
+);
+
+-- ROLES_PERMISOS
+CREATE TABLE roles_permisos (
+  id_rol INT REFERENCES roles(id_rol),
+  id_permiso INT REFERENCES permisos(id_permiso),
+  PRIMARY KEY (id_rol, id_permiso)
+);
+
+-- USUARIOS
+CREATE TABLE usuarios (
+  id_usuario SERIAL PRIMARY KEY,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  nombre_completo VARCHAR(100),
+  id_rol INT REFERENCES roles(id_rol),
+  estado BOOLEAN DEFAULT TRUE,
+  fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CARGOS
+CREATE TABLE cargos (
+  id_cargo SERIAL PRIMARY KEY,
+  nombre_cargo VARCHAR(100)
+);
+
+-- CLIENTES
+CREATE TABLE clientes (
+  id_cliente SERIAL PRIMARY KEY,
+  codigo_cliente VARCHAR(50) UNIQUE NOT NULL,
+  nombre_completo VARCHAR(150),
+  id_cargo INT REFERENCES cargos(id_cargo),
+  estado BOOLEAN DEFAULT TRUE,
+  creado_por INT REFERENCES usuarios(id_usuario),
+  fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CATEGORIAS
+CREATE TABLE categorias (
+  id_categoria SERIAL PRIMARY KEY,
+  nombre VARCHAR(100)
+);
+
+-- UNIDADES DE MEDIDA
+CREATE TABLE unidades_medida (
+  id_unidad SERIAL PRIMARY KEY,
+  nombre VARCHAR(50)
+);
+
+-- PRODUCTOS
+CREATE TABLE productos (
+  id_producto SERIAL PRIMARY KEY,
+  nombre VARCHAR(150),
+  precio NUMERIC(10,2),
+  id_categoria INT REFERENCES categorias(id_categoria),
+  id_unidad INT REFERENCES unidades_medida(id_unidad),
+  stock INT DEFAULT 0,
+  tiene_stock BOOLEAN DEFAULT TRUE,
+  creado_por INT REFERENCES usuarios(id_usuario)
+);
+
+-- VENTAS
+CREATE TABLE ventas (
+  id_venta SERIAL PRIMARY KEY,
+  id_cliente INT REFERENCES clientes(id_cliente),
+  id_usuario INT REFERENCES usuarios(id_usuario),
+  total NUMERIC(10,2),
+  fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- DETALLE DE VENTA
+CREATE TABLE detalle_venta (
+  id_detalle SERIAL PRIMARY KEY,
+  id_venta INT REFERENCES ventas(id_venta) ON DELETE CASCADE,
+  id_producto INT REFERENCES productos(id_producto),
+  cantidad INT,
+  precio_unitario NUMERIC(10,2),
+  subtotal NUMERIC(10,2)
+);
+
+-- TIPOS DE NOTIFICACION
+CREATE TABLE tipos_notificacion (
+  id_tipo SERIAL PRIMARY KEY,
+  nombre VARCHAR(50)
+);
+
+-- NOTIFICACIONES
+CREATE TABLE notificaciones (
+  id_notificacion SERIAL PRIMARY KEY,
+  id_tipo INT REFERENCES tipos_notificacion(id_tipo),
+  mensaje TEXT,
+  leido BOOLEAN DEFAULT FALSE,
+  fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- AUDITORIA
+CREATE TABLE auditoria (
+  id_auditoria SERIAL PRIMARY KEY,
+  id_usuario INT REFERENCES usuarios(id_usuario),
+  accion VARCHAR(100),
+  tabla_afectada VARCHAR(100),
+  descripcion TEXT,
+  fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- BUSQUEDAS
+CREATE TABLE busquedas_cliente (
+  id_busqueda SERIAL PRIMARY KEY,
+  id_usuario INT REFERENCES usuarios(id_usuario),
+  termino_busqueda TEXT,
+  fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- HISTORIAL DE CONSUMO
+CREATE TABLE historial_consumo (
+  id_historial SERIAL PRIMARY KEY,
+  id_cliente INT REFERENCES clientes(id_cliente),
+  id_producto INT REFERENCES productos(id_producto),
+  frecuencia INT,
+  ultima_compra TIMESTAMP
+);
+
+-- =========================================
+-- DATOS DE PRUEBA
+-- =========================================
+
+-- ROLES
+INSERT INTO roles (nombre_rol) VALUES
+('ADMIN'),
+('CAJERO'),
+('SISTEMAS');
+
+-- USUARIOS
+INSERT INTO usuarios (username, password, nombre_completo, id_rol) VALUES
+('admin', 'admin123', 'Administrador General', 1),
+('cajero', 'cajero123', 'Juan Perez', 2),
+('sistemas', 'sistemas123', 'Maria Lopez', 3);
+
+-- CARGOS
+INSERT INTO cargos (nombre_cargo) VALUES
+('Administración'),
+('Operaciones'),
+('Contabilidad');
+
+-- CLIENTES
+INSERT INTO clientes (codigo_cliente, nombre_completo, id_cargo, creado_por) VALUES
+('C001', 'Carlos Mendoza', 1, 1),
+('C002', 'Ana Torres', 2, 1),
+('C003', 'Luis Vargas', 3, 2);
+
+-- CATEGORIAS
+INSERT INTO categorias (nombre) VALUES
+('Snacks'),
+('Refrescos'),
+('Desayuno'),
+('Almuerzo'),
+('Cena');
+
+-- UNIDADES
+INSERT INTO unidades_medida (nombre) VALUES
+('Unidad'),
+('Litro'),
+('Kg');
+
+-- PRODUCTOS
+INSERT INTO productos (nombre, precio, id_categoria, id_unidad, stock, tiene_stock, creado_por) VALUES
+('Galletas', 5.00, 1, 1, 50, TRUE, 1),
+('Coca Cola', 10.00, 2, 2, 30, TRUE, 1),
+('Desayuno Ejecutivo', 15.00, 3, 1, 0, FALSE, 1),
+('Almuerzo Completo', 25.00, 4, 1, 0, FALSE, 1);
+
+-- VENTAS
+INSERT INTO ventas (id_cliente, id_usuario, total) VALUES
+(1, 2, 20.00),
+(2, 2, 35.00);
+
+-- DETALLE VENTA
+INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario, subtotal) VALUES
+(1, 1, 2, 5.00, 10.00),
+(1, 2, 1, 10.00, 10.00),
+(2, 3, 1, 15.00, 15.00),
+(2, 4, 1, 20.00, 20.00);
+
+-- TIPOS NOTIFICACION
+INSERT INTO tipos_notificacion (nombre) VALUES
+('Stock Bajo'),
+('Login Fallido');
+
+-- NOTIFICACIONES
+INSERT INTO notificaciones (id_tipo, mensaje) VALUES
+(1, 'El producto Coca Cola tiene stock bajo'),
+(2, 'Intento fallido de login');
+
+-- AUDITORIA
+INSERT INTO auditoria (id_usuario, accion, tabla_afectada, descripcion) VALUES
+(1, 'INSERT', 'clientes', 'Registro de cliente'),
+(2, 'INSERT', 'ventas', 'Registro de venta');
+
+-- BUSQUEDAS
+INSERT INTO busquedas_cliente (id_usuario, termino_busqueda) VALUES
+(2, 'Carlos'),
+(2, 'Ana');
+
+-- HISTORIAL
+INSERT INTO historial_consumo (id_cliente, id_producto, frecuencia, ultima_compra) VALUES
+(1, 1, 5, NOW()),
+(2, 3, 3, NOW());
+SELECT * FROM clientes LIMIT 1;
+SELECT column_name 
+FROM information_schema.columns 
+WHERE table_name = 'clientes';
