@@ -1,10 +1,14 @@
+# SISTEMA-WEB-CATERING-SERVICES-SIL&TE
 # Sistema-Web-Catering-Services-Sil-Te
 
 repositorio codigo fuente, sistema gestion de consumo, reportes, planillas, importar clientes
 
-# seguimiento de sprint
+#SEGUIMIENTO SPRINT
 
 https://trello.com/b/a2Apq94I/sistema-web-catering-services-silte
+
+# DESARROLLO BACKEND
+$npm run start:dev
 
 # DESARROLLO FRONTEND
 
