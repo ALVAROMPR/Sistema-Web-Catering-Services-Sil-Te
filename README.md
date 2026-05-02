@@ -2,9 +2,11 @@
 
 repositorio codigo fuente, sistema gestion de consumo, reportes, planillas, importar clientes
 
+# seguimiento de sprint
 
+https://trello.com/b/a2Apq94I/sistema-web-catering-services-silte
 
-FRONTEND
+# DESARROLLO FRONTEND
 
 $npm install
 
